@@ -1,0 +1,18 @@
+# 实际 PRD 文档（团队内部，不随插件发布）
+projects/
+
+# V2 飞书机器人（本地开发用，不发布）
+feishu-prd-bot/
+
+# Claude Code 本地权限配置（每个用户自己的，不发布）
+.claude/
+
+# 遗留 hooks（本地开发用）
+hooks/
+
+# 旧版插件配置
+.claude-plugin/
+.superpowers/
+
+# 系统文件
+.DS_Store
