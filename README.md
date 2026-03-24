@@ -73,11 +73,27 @@ Reads the original, restructures it to the standard template, saves as a new fil
 
 Combines two or more PRDs (local files or Feishu links) into a single structured document. Conflicts are automatically annotated with ⚠️ for PM review.
 
+### Generate PRD from Axure prototype
+
+```
+/prd:axure-to-prd path/to/file.rp
+```
+
+Parses an Axure `.rp` source file directly — no Axure app required. Extracts page labels, annotations, and interaction notes from the binary file, then generates a complete PRD saved to `projects/`. Works with Axure 9 and later.
+
+**What gets extracted:**
+- Page/folder names → 目标与范围、流程
+- UI control labels and field names → 产品/交互逻辑
+- Inline annotations and design notes → 交互逻辑、异常流程
+- Calculation rules and constraints → 业务背景、验收标准
+
+Image-only shapes are marked as `[原型含图，需 PM 补充描述]` for manual follow-up.
+
 ---
 
 ## Feishu Integration (Optional)
 
-`/prd:normalize`, `/prd:review`, and `/prd:merge` with Feishu links require the Feishu MCP:
+`/prd:normalize`, `/prd:review`, `/prd:merge`, and `/prd:axure-to-prd` with Feishu upload require the Feishu MCP:
 
 ```bash
 claude mcp add feishu-mcp -- npx -y feishu-mcp@latest
@@ -123,8 +139,11 @@ If these files exist in your working directory, they override the defaults.
 │   │   └── SKILL.md
 │   ├── review/             # prd-review: completeness & conflict check
 │   │   └── SKILL.md
-│   └── merge/              # prd-merge: combine multiple PRDs
-│       └── SKILL.md
+│   ├── merge/              # prd-merge: combine multiple PRDs
+│   │   └── SKILL.md
+│   └── axure-to-prd/       # prd-axure-to-prd: parse .rp file → PRD
+│       ├── SKILL.md
+│       └── parse_axure.py
 ├── install.sh
 └── README.md
 ```
