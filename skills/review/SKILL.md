@@ -15,7 +15,6 @@ Review a PRD document for completeness and correctness. Two modes:
 ```
 review [飞书链接 or local file]
 review [飞书链接 or local file] --global
-review [飞书链接 or local file] --global --space=[wiki_space_id]
 ```
 
 ## Step 1: Read the Document
@@ -60,50 +59,53 @@ After the checklist, output a summary:
 
 ## Step 3: Global Check (Only with --global)
 
-After the completeness check, determine the wiki space to search:
+### 3.1 收集必要信息
 
-### Resolve `space_id` (priority order)
+如果用户未在命令中提供以下信息，依次询问：
 
-1. **Inline flag**: If `--space=[value]` is provided, use that value directly.
-2. **Config file**: Check for `.ai-config/feishu-config.json` in the current working directory. If it contains `"wiki_space_id"`, use that value.
-3. **Auto-detect from document**: If the document was a wiki link, the `wiki_v2_space_getNode` response includes a `space_id` field — use it.
-4. **No filter**: If none of the above apply, call `wiki_v1_node_search` without `space_id` (searches all accessible wiki spaces — may return unrelated results).
+1. **本地 PRD 文件名**（如未通过 local file 方式调用）
+2. **知识库参考文档链接**：请用户提供目标飞书知识库中任意一篇文档的链接
 
-### How PMs find their `space_id`
+收到链接后，调用 `wiki_v2_space_getNode` 解析出 `space_id`，无需告知用户。
 
-Open any page in the target knowledge base. The URL looks like:
+### 3.2 提炼关键词
+
+从 PRD 的"五、产品/交互逻辑"中逐一提取每个需求点的核心关键词（业务实体、动作、状态、角色等），每个需求点 1-3 个关键词组合。
+
+### 3.3 搜索相关文档
+
+对每组关键词调用 `wiki_v1_node_search`（带 `space_id`），合并所有搜索结果，去重后**取排名靠前、语义最相关的 3 篇文档**。
+
+若搜索结果少于 3 篇，取全部结果。
+
+### 3.4 读取并审阅
+
+逐一调用 `docx_v1_document_rawContent` 读取这 3 篇文档，然后与 PRD 进行对比审阅，检查：
+
+- **逻辑一致性**：相同业务实体的状态、规则、权限定义是否一致
+- **逻辑冲突**：是否存在与 PRD 直接矛盾的业务规则或流程描述
+- **逻辑完整性**：相关文档中涉及的场景、边界条件，PRD 是否有遗漏
+
+### 3.5 输出格式
+
 ```
-https://xxx.feishu.cn/wiki/ZLIgw7SqNix1fRknuvXcWLSjnWe
-```
-Call `wiki_v2_space_getNode` with `token=ZLIgw7SqNix1fRknuvXcWLSjnWe` — the response contains `space_id`.
-Alternatively, the PM can find it in Feishu → 知识库 → 设置 → 基本信息.
-
-### Search and analyze
-
-1. Call `wiki_v1_node_search` with the resolved `space_id` (if any) and the document's core topic as query
-2. Find up to 10 semantically related documents
-3. Read the most relevant ones using `docx_v1_document_rawContent`
-4. Check for:
-   - **Logic conflicts**: business rules, state transitions, permission definitions that contradict this document
-   - **Missing scenarios**: situations covered in related docs but absent here
-
-Output format for global issues:
-
-```
---- 全局检查（知识库：[space_id or 全部]）---
+--- 全局检查（参考文档：[doc1标题]、[doc2标题]、[doc3标题]）---
 
 ⚠️ 逻辑冲突
-- [conflict description] （来源：[document name]）
+- [冲突描述]（来源：[文档标题]）
 
-⚠️ 遗漏场景
-- [scenario description] （来源：[document name]）
+⚠️ 逻辑遗漏
+- [遗漏场景描述]（来源：[文档标题]）
+
+✅ 逻辑一致
+- [一致的关键规则描述]（来源：[文档标题]）
 ```
 
-If no conflicts or gaps found: `✅ 全局检查：未发现逻辑冲突或明显遗漏`
+若无冲突或遗漏：`✅ 全局检查：未发现逻辑冲突或明显遗漏`
 
 ## Notes
 
 - Be objective — do not make business judgments on behalf of the PM
 - Only flag clear issues — do not penalize stylistic differences
 - If a section uses `⚠️ 存疑` markers, note them but do not count as missing
-- Max 10 related documents read during global check
+- 只读取最相关的 3 篇文档，控制 token 消耗

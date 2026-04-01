@@ -65,12 +65,24 @@ Reads the original, restructures it to the standard template (including Mermaid 
 ```
 /prd:review [飞书链接 or local file]
 /prd:review [飞书链接 or local file] --global
-/prd:review [飞书链接 or local file] --global --space=[wiki_space_id]
 ```
 
 - Default: per-section completeness check with ✅/⚠️/❌ output
-- `--global`: also checks for logical conflicts with related documents in the Feishu knowledge base
-- `--space`: restrict knowledge base search to a specific wiki space
+- `--global`: also checks for logical consistency, conflicts, and completeness against the Feishu knowledge base
+
+**How `--global` works:**
+
+1. Claude extracts keywords from each requirement point in the PRD
+2. Searches the target Feishu wiki space using those keywords (`wiki:wiki:readonly` permission required)
+3. Reads the top 3 most relevant documents
+4. Compares against the PRD and reports: logic conflicts, missing scenarios, and confirmed consistencies
+
+**`--global` requires two inputs (Claude will ask if not provided):**
+
+- The local PRD file path
+- Any wiki page link from the target knowledge base — Claude uses it to automatically determine the wiki space
+
+No manual `space_id` configuration needed.
 
 ### Merge multiple PRDs
 
@@ -125,16 +137,6 @@ claude mcp add feishu-mcp -- npx -y feishu-mcp@latest
 After adding, run `/mcp` in Claude Code to complete authorization.
 
 For `/prd:review --global`, grant `wiki:wiki:readonly` in Feishu Open Platform.
-
-**Configure default wiki space** — create `.ai-config/feishu-config.json` in your workspace:
-
-```json
-{
-  "wiki_space_id": "your_space_id_here"
-}
-```
-
-To find your `space_id`: send any wiki page link to Claude and ask "帮我查一下这篇文章所在知识库的 space_id".
 
 ---
 
