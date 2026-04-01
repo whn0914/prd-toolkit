@@ -67,6 +67,11 @@ Fill the standard template. Content rules:
 - If a section has no source content, leave it with a placeholder `（原型未涉及，需 PM 补充）`
 - Add `[原型含图，需 PM 补充描述]` where visual layout matters but cannot be inferred
 
+**Mermaid 生成规则：**
+- **「四、流程」**：根据 sitemap 页面顺序和页面间跳转关系，生成 `flowchart TD` 流程图
+- **「五、产品/交互逻辑」**：页面内存在多状态、条件分支时，插入对应 Mermaid 图
+- 无法确定跳转关系时，标注 `（原型跳转逻辑不明确，需 PM 确认）`
+
 ```markdown
 # [功能名称]
 

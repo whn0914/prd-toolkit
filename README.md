@@ -1,6 +1,6 @@
 # AI PRD Toolkit
 
-A Claude Code skill set for product managers. Generates, normalizes, reviews, and merges PRD documents through guided AI conversation, with optional Feishu (Lark) integration.
+A Claude Code skill set for product managers. Explores requirements through guided conversation, generates structured PRD documents with Mermaid flowcharts, and integrates with Feishu (Lark).
 
 ---
 
@@ -27,21 +27,30 @@ Then in Claude Code, run:
 /clear
 ```
 
-### Step 3: (Optional) Install Superpowers
-
-The `prd-generate` skill works standalone. If you also have the [Superpowers](https://github.com/obra/superpowers-marketplace) plugin installed, its brainstorming capabilities will be available during generation.
-
 ---
 
 ## Usage
 
-### Generate a new PRD
+### Step 1: Explore requirements with brainstorm
+
+```
+/prd:brainstorm
+```
+
+Start a structured multi-turn conversation. Claude asks one question at a time, accepts Axure/Figma prototype screenshots (`Cmd+V`), draws Mermaid flowcharts for confirmation, and saves rolling checkpoints to `projects/.drafts/`. Supports single requirements and multi-requirement version bundles.
+
+When exploration is complete, Claude prompts you to run `/prd:generate`.
+
+### Step 2: Generate the final PRD
 
 ```
 /prd:generate
+/prd:generate [功能名]
 ```
 
-Start a guided conversation. Claude asks one question at a time, accepts Axure/Figma prototype screenshots (`Cmd+V`), and generates a complete PRD saved to `projects/`.
+Reads the draft produced by brainstorm, presents a summary for your confirmation, generates the complete PRD to `projects/`, and runs an automated quality review. If issues are found, they are fixed or flagged with `⚠️ 存疑` for your review.
+
+---
 
 ### Normalize an existing document
 
@@ -49,7 +58,7 @@ Start a guided conversation. Claude asks one question at a time, accepts Axure/F
 /prd:normalize [飞书链接 or local file]
 ```
 
-Reads the original, restructures it to the standard template, saves as a new file. The original is never modified.
+Reads the original, restructures it to the standard template (including Mermaid flowcharts), saves as a new file. The original is never modified.
 
 ### Review a document
 
@@ -71,7 +80,7 @@ Reads the original, restructures it to the standard template, saves as a new fil
 /prd:merge projects/A.md projects/B.md --output merged.md
 ```
 
-Combines two or more PRDs (local files or Feishu links) into a single structured document. Conflicts are automatically annotated with ⚠️ for PM review.
+Combines two or more PRDs (local files or Feishu links) into a single structured document with Mermaid flowcharts. Conflicts are automatically annotated with ⚠️ for PM review.
 
 ### Generate PRD from Axure prototype
 
@@ -79,10 +88,10 @@ Combines two or more PRDs (local files or Feishu links) into a single structured
 /prd:axure-to-prd path/to/file.rp
 ```
 
-Parses an Axure `.rp` source file directly — no Axure app required. Extracts page labels, annotations, and interaction notes from the binary file, then generates a complete PRD saved to `projects/`. Works with Axure 9 and later.
+Parses an Axure `.rp` source file directly — no Axure app required. Extracts page labels, annotations, and interaction notes from the binary file, generates Mermaid flowcharts from the sitemap and page structure, then produces a complete PRD saved to `projects/`. Works with Axure 9 and later.
 
 **What gets extracted:**
-- Page/folder names → 目标与范围、流程
+- Page/folder names → 目标与范围、流程（+ Mermaid）
 - UI control labels and field names → 产品/交互逻辑
 - Inline annotations and design notes → 交互逻辑、异常流程
 - Calculation rules and constraints → 业务背景、验收标准
@@ -91,9 +100,23 @@ Image-only shapes are marked as `[原型含图，需 PM 补充描述]` for manua
 
 ---
 
+## Draft files
+
+During brainstorm, Claude maintains working drafts in `projects/.drafts/`:
+
+```
+projects/.drafts/
+  [功能名]-draft.md    ← current confirmed state (read by prd-generate)
+  [功能名]-log.md      ← append-only change history (human reference only)
+```
+
+Drafts are never auto-deleted — you can return to brainstorm at any time to continue refining.
+
+---
+
 ## Feishu Integration (Optional)
 
-`/prd:normalize`, `/prd:review`, `/prd:merge`, and `/prd:axure-to-prd` with Feishu upload require the Feishu MCP:
+`/prd:normalize`, `/prd:review`, `/prd:merge`, `/prd:axure-to-prd`, and `/prd:generate` with Feishu upload require the Feishu MCP:
 
 ```bash
 claude mcp add feishu-mcp -- npx -y feishu-mcp@latest
@@ -122,9 +145,7 @@ Both config files live in `.ai-config/` and are loaded automatically:
 | File | Purpose | Editable |
 |------|---------|----------|
 | `.ai-config/prd-template.md` | PRD section structure and required fields | Team lead only |
-| `.ai-config/ai-guidelines.md` | AI behavior rules (ask style, review criteria) | PM can modify |
-
-If these files exist in your working directory, they override the defaults.
+| `.ai-config/ai-guidelines.md` | AI behavior rules (ask style, checkpoint, Mermaid, review criteria) | PM can modify |
 
 ---
 
@@ -132,7 +153,9 @@ If these files exist in your working directory, they override the defaults.
 
 ```
 ├── skills/
-│   ├── generate/           # prd-generate: guided PRD creation
+│   ├── brainstorm/         # prd-brainstorm: multi-turn requirement exploration
+│   │   └── SKILL.md
+│   ├── generate/           # prd-generate: draft → final PRD + review
 │   │   ├── SKILL.md
 │   │   └── prd-reviewer-prompt.md
 │   ├── normalize/          # prd-normalize: restructure existing docs
@@ -144,6 +167,9 @@ If these files exist in your working directory, they override the defaults.
 │   └── axure-to-prd/       # prd-axure-to-prd: parse .rp file → PRD
 │       ├── SKILL.md
 │       └── parse_axure.py
+├── .ai-config/
+│   ├── prd-template.md
+│   └── ai-guidelines.md
 ├── install.sh
 └── README.md
 ```
