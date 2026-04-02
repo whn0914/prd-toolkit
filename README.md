@@ -72,17 +72,20 @@ Reads the original, restructures it to the standard template (including Mermaid 
 
 **How `--global` works:**
 
-1. Claude extracts keywords from each requirement point in the PRD
-2. Searches the target Feishu wiki space using those keywords (`wiki:wiki:readonly` permission required)
-3. Reads the top 3 most relevant documents
-4. Compares against the PRD and reports: logic conflicts, missing scenarios, and confirmed consistencies
+Runs an interactive per-requirement review loop:
+
+1. Lists all requirement points from section 五（产品/交互逻辑）
+2. For each requirement point, asks PM: review this one? (y/n)
+3. If yes: uses the requirement name as the search keyword, searches the Feishu wiki space, reads the top 3 most relevant documents, and checks for logic consistency, conflicts, and missing scenarios
+4. Outputs results per requirement point, then moves to the next
+5. Ends with a summary: reviewed / skipped / issues found
 
 **`--global` requires two inputs (Claude will ask if not provided):**
 
 - The local PRD file path
 - Any wiki page link from the target knowledge base — Claude uses it to automatically determine the wiki space
 
-No manual `space_id` configuration needed.
+No manual `space_id` configuration needed. Requires `wiki:wiki:readonly` permission in Feishu Open Platform.
 
 ### Merge multiple PRDs
 
